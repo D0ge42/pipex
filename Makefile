@@ -1,7 +1,7 @@
 NAME = pipex
 LIBFT = libft/libft.a
 
-SRC = pipex.c
+SRC = pipex.c utils.c
 
 OBJS = $(SRC:.c=.o) # Esclude i file oggetto di libft
 

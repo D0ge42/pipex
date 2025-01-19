@@ -5,4 +5,7 @@
 #include <stdio.h>
 #include "libft/libft.h"
 
+
+int check_file_existence(char *infile, char *outfile);
+
 #endif

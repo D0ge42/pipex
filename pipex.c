@@ -1,6 +1,5 @@
 #include "libft/libft.h"
 #include "pipex.h"
-#include <unistd.h>
 
 /*Function to check wheter the command exists or not
 We'll check for the word PATH= which means env variables are set.
@@ -47,12 +46,29 @@ char	*pathfinder(const char *cmd, char **env)
     free_paths(path);
 	return (return_path);
 }
-
-int	main(int ac, const char **av, char **env)
+#include <fcntl.h>
+int	main()
 {
-	(void)ac;
-	// check_existence(av[1],av[2]);
-	char *str = pathfinder(av[1], env);
-	ft_printf("%s\n", str);
-    free(str);
+    pid_t pid;
+    int pipefd[2];
+    pipe(pipefd);
+
+    pid = fork();
+
+    char write_msg[] = "Hello from writer";
+    char read_msg[50];
+    if (pid == 0) //Child
+    {
+        close(pipefd[1]);
+        read(pipefd[0],read_msg,sizeof(read_msg));
+        close(pipefd[0]);
+        ft_printf("Child read: %s\n", read_msg);
+    }
+    else
+    {
+        close(pipefd[0]);
+        write(pipefd[1],write_msg,ft_strlen(write_msg)+ 1);
+        close(pipefd[1]);
+    }
+    return 0;
 }
