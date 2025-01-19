@@ -47,12 +47,45 @@ char	*pathfinder(const char *cmd, char **env)
 	return (return_path);
 }
 
-int main()
+/*Waitpid works like that. If WNOHANG Flags is present
+it means that parent won-t wait for children to end its process. 
+It will return 0 if when the process reach waitpid call the children process is not dead yet.
+
+By using sleep 1 we'll be able to give enough time to children process to die. This way pid
+won't be 0, but it will be > 0 and it will enter a different if statement.*/
+
+int	main()
 {
-    //Prima di tutto controllo che i file esistano e che siano accessibili.
-    //if(check_file_existence(av[1],av[2]) == 1) i file esistono.
-    //Se la funzione ritorna -2 non esiste il file dove scrivere.
-    //Quindi lo creo
-    //open(av[2],O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
-    
+    pid_t pid;
+    int pipefd[2];
+    pipe(pipefd);
+
+    pid = fork();
+    int status;
+
+    char write_msg[] = "Hello from writer";
+    char read_msg[300];
+    if (pid == 0) //Child
+    {
+        close(pipefd[0]);
+        write(pipefd[1],write_msg,ft_strlen(write_msg) + 1);
+        close(pipefd[1]);
+    }
+    else
+    {
+        close(pipefd[1]);
+        sleep(1); 
+        pid_t result = waitpid(pid,&status,WNOHANG);
+        ft_printf("RESULT OF WAITPID = %i\n",result);
+        if (result == 0)
+            printf("Il figlio non è ancora terminato, continuo a fare altro");
+        else
+        {
+            read(pipefd[0],read_msg,sizeof(read_msg));
+            ft_printf("Parent read: %s\n", read_msg);
+        }
+        close(pipefd[0]);
+
+    }
+    return 0;
 }

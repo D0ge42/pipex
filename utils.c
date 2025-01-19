@@ -14,7 +14,7 @@ int check_file_existence(char *infile,char *outfile)
     if(access(outfile,F_OK) != 0)
     {
         perror("Output file does not exists");
-        return 0;
+        return -2;
     }
     if (!access(infile,F_OK) && !access(infile,F_OK))
     {
