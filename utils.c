@@ -1,114 +1,121 @@
 #include "libft/libft.h"
 #include "pipex.h"
-#include <fcntl.h>
-#include <stdio.h>
-#include <unistd.h>
 
 /*Function to checks wheter selected files exists
 and they're accessible in read/write mode */
 
 int	check_file_existence(char *infile, char *outfile)
 {
-
-	if (access(infile, F_OK) == -1)
+	if (access(infile, F_OK) != 0)
 	{
 		perror("Input file does not exists");
-		return 0;
-	}
-	if (access(infile, R_OK) == -1)
-	{
-		perror("Can't read from input file");
 		return (0);
 	}
-	if (access(outfile, W_OK) == -1)
+	if (access(outfile, F_OK) != 0)
 	{
-        perror("Can't write to output file");
-        return 0;
+		perror("Output file does not exists");
+		return (-2);
+	}
+	if (!access(infile, F_OK) && !access(infile, F_OK))
+	{
+		if (access(infile, R_OK) != 0)
+		{
+			perror("Can't read from input file");
+			return (0);
+		}
+		if (access(outfile, W_OK) != 0)
+		{
+			perror("Can't write in output file");
+			return (0);
+		}
 	}
 	return (1);
 }
-
-void first_child(int infile, char *av, int *fd)
+int	first_child(int infile, char *av)
 {
-	pid_t pid;
-	extern char **environ;	
-	//Handle Error
+	pid_t		pid;
+	extern char	**environ;
+	int			fd[2];
+	char		**args;
 
-	pid = fork();
-	if (pid == 0)
-	{
-		close(fd[0]);
-		dup2(infile,STDIN_FILENO);
-		dup2(fd[1],STDOUT_FILENO);
-		char **args = get_args(av);
-		execve(pathfinder(args[0],environ),args,environ);
-	}
-}
-
-char **get_args(char *av)
-{
-	if(!av)
-		return NULL;
-	char **args = ft_split(av,' ');
-	if(!args)
-		return NULL;
-	return args;
-}
-
-int *middle_childs(int *fd, char *av,char **cmd)
-{
-	//Leggo dalla fd[0] della pipe precedente.
-	//Scrivo nella fd[1] della pipe corrente.
-	//Repeat
-	int fd2[2];
-	pid_t pid;
-	extern char **environ;
-
-	pipe(fd2);
-
-	pid = fork();
-	if (pid == 0)
-	{
-		close(fd[0]);
-		dup2(fd[0],STDIN_FILENO);
-		dup2(fd2[1],STDOUT_FILENO);
-		char **args = get_args(av);
-		execve(pathfinder(*cmd,environ),args,environ);
-	}
-	else
-		return fd2;
-}
-
-void last_child(int outfile)
-{
-	pid_t pid;
-	int fd[2];
-
+	// Handle Error
 	pipe(fd);
-	
-	//Handle Error
-
 	pid = fork();
 	if (pid == 0)
 	{
-		close(fd[0]);
-		dup2(fd[1],STDOUT_FILENO);
-		dup2(outfile,STDOUT_FILENO);
-		//Exec command
+		dup2(infile, STDIN_FILENO);
+		dup2(fd[1], STDOUT_FILENO);
+		args = get_args(av);
+        
+		execve(pathfinder(args[0], environ), args, environ);
 	}
-	else
-	{
-		close(fd[1]);
-		dup2(fd[0],STDIN_FILENO);
-		waitpid(pid, NULL, 0);
-	}
+    close(fd[1]);
+    return fd[0];
 }
 
-// void execute(char **av, char **env)
-// {
-//     char **cmd = ft_split(av,' ');
+char	**get_args(char *av)
+{
+	char	**args;
 
+	if (!av)
+		return (NULL);
+	args = ft_split(av, ' ');
+	if (!args)
+		return (NULL);
+	return (args);
+}
+
+int	middle_childs(int fd, char *av)
+{
+	int			fds[2];
+	pid_t		pid;
+	extern char	**environ;
+	char		**args;
+
+	// Leggo dalla fd[0] della pipe precedente.
+	// Scrivo nella fd[1] della pipe corrente.
+	// Repeat
+	pipe(fds);
+	pid = fork();
+	if (pid == 0)
+	{
+		dup2(fd, STDIN_FILENO);
+		dup2(fds[1], STDOUT_FILENO);
+		args = get_args(av);
+        if (access(pathfinder(args[0],environ),F_OK) == -1)
+        {
+            close(fds[1]);
+            exit(1);
+        }
+		execve(pathfinder(args[0], environ), args, environ);
+	}
+    close(fds[1]);
+	return fds[0];
+}
+
+// int	last_child(int outfile)
+// {
+// 	pid_t	pid;
+// 	int		fd[2];
+
+// 	pipe(fd);
+// 	// Handle Error
+// 	pid = fork();
+// 	if (pid == 0)
+// 	{
+// 		close(fd[0]);
+// 		dup2(fd[1], STDOUT_FILENO);
+// 		dup2(outfile, STDOUT_FILENO);
+// 		// Exec command
+// 	}
+// 	else
+// 	{
+// 		close(fd[1]);
+// 		dup2(fd[0], STDIN_FILENO);
+// 		waitpid(pid, NULL, 0);
+// 	}
 // }
+
 // void pipe_creator(int pipefd[2])
 // {
 //     pid_t pid;

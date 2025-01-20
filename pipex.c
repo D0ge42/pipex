@@ -25,10 +25,10 @@ void	free_paths(char **path)
 
 char	*pathfinder(const char *cmd, char **env)
 {
-	char		**path;
-	int			i;
-	char		*return_path;
-	size_t		len;
+	char	**path;
+	int		i;
+	char	*return_path;
+	size_t	len;
 
 	i = 0;
 	while (!ft_strnstr((*env), "PATH=", 5))
@@ -52,64 +52,62 @@ char	*pathfinder(const char *cmd, char **env)
 	return (return_path);
 }
 
-int	main(int ac, char **av,char **env)
+int	main(int ac, char **av, char **env)
 {
+	int		infile;
+	int		outfile;
+	int		result;
+	int		i;
+	int		current_fd;
+	char	**args_1;
+
 	(void)ac;
-	int fd[2];
-	int infile = open(av[1],O_RDONLY);
-	int outfile = open(av[ac - 1],O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	int result = check_file_existence(av[1], av[ac - 1]);
-	int i = 0;
-	if(result == 1)
+	infile = open(av[1], O_RDONLY);
+	outfile = open(av[ac - 1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	result = check_file_existence(av[1], av[ac - 1]);
+	i = 0;
+	current_fd = infile;
+	if (result == 1)
 	{
-
-		pipe(fd);
-		pid_t pid = fork();
-
-		if (pid == 0)
+		if (i == 0)
 		{
-			if(i == 0)
-			{
-				first_child(infile,av[2],fd);
-				i++;
-			}
-			while (i < ac - 3)
-			{
-				//Handle middle child
-				middle_child(fd,);
-				i++;
-			}
+			current_fd = first_child(infile, av[2]);
+			i++;
 		}
-		else // Parent call that should print to the output file 
+		while (i < ac - 3)
 		{
-			// wc -w
-			close(fd[1]);
-			dup2(fd[0],STDIN_FILENO);
-			dup2(outfile,STDOUT_FILENO);
-			char **args_1 = get_args(av[ac - 2]);
-			execve(pathfinder(args_1[0],env), args_1,env);
-			close(fd[0]);
+			current_fd = middle_childs(current_fd, av[2 + i]);
+			i++;
+		}
+		pid_t pid = fork();
+		if(pid == 0)
+		{
+			dup2(current_fd, STDIN_FILENO);
+			dup2(outfile, STDOUT_FILENO);
+			args_1 = get_args(av[ac - 2]);
+			execve(pathfinder(args_1[0], env), args_1, env);
+			close(current_fd);
 		}
 	}
 }
 
-	// Creo pipe per poter scrivere alla read e write end of the pipe.
-	// La pipe 0 legge da infile, e scrive in pipe0
-	// pipe 1 reads from  pipe0 and writes  in outfile
-	// We'll need 1 pipe each 2 commands
+// Creo pipe per poter scrivere alla read e write end of the pipe.
+// La pipe 0 legge da infile, e scrive in pipe0
+// pipe 1 reads from  pipe0 and writes  in outfile
+// We'll need 1 pipe each 2 commands
 
-	// At this point we're ready to fork the main process and create childs.
-	// Each child will handle a different command.
+// At this point we're ready to fork the main process and create childs.
+// Each child will handle a different command.
 
-	// We'll have to configure each file descriptor inside each child with dup2();
-	// Basically if there's only one command it will be something like
-	// dup2(fd[0],stdin) --> to redirect stdin to infile.
-	// This mean that will be reading from file rather than from stdin.
-	// dup2(fd[1],stdout) --> to redirect stdout to outfile.
-	// This mean that we won't be redirecting our output to stdout,but instead to outfile.
+// We'll have to configure each file descriptor inside each child with dup2();
+// Basically if there's only one command it will be something like
+// dup2(fd[0],stdin) --> to redirect stdin to infile.
+// This mean that will be reading from file rather than from stdin.
+// dup2(fd[1],stdout) --> to redirect stdout to outfile.
+// This mean that we won't be redirecting our output to stdout,but instead to outfile.
 
-	// Once fds are set we can start executing commands on the respective file descriptors.
-	// Commands will be executed on specified fd rather than on the stdout
+// Once fds are set we can start executing commands on the respective file descriptors.
+// Commands will be executed on specified fd rather than on the stdout
 
-	//Handle heredoc
-	//If we find here_doc string as first argument we must handle it with gnl.
+// Handle heredoc
+// If we find here_doc string as first argument we must handle it with gnl.
