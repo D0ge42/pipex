@@ -11,5 +11,5 @@
 
 
 int check_file_existence(char *infile, char *outfile);
-
+char **get_args(char *av);
 #endif
