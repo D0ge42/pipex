@@ -11,5 +11,8 @@
 
 
 int check_file_existence(char *infile, char *outfile);
+char	*pathfinder(const char *cmd, char **env);
+void first_child(int infile, char *av, int *fd);
+int *middle_childs(int *fd);
 char **get_args(char *av);
 #endif

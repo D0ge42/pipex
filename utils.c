@@ -11,7 +11,10 @@ int	check_file_existence(char *infile, char *outfile)
 {
 
 	if (access(infile, F_OK) == -1)
+	{
 		perror("Input file does not exists");
+		return 0;
+	}
 	if (access(infile, R_OK) == -1)
 	{
 		perror("Can't read from input file");
@@ -25,14 +28,11 @@ int	check_file_existence(char *infile, char *outfile)
 	return (1);
 }
 
-void first_child(int infile)
+void first_child(int infile, char *av, int *fd)
 {
 	pid_t pid;
-	int fd[2];
-	
+	extern char **environ;	
 	//Handle Error
-
-	pipe(fd);
 
 	pid = fork();
 	if (pid == 0)
@@ -40,13 +40,8 @@ void first_child(int infile)
 		close(fd[0]);
 		dup2(infile,STDIN_FILENO);
 		dup2(fd[1],STDOUT_FILENO);
-		//Exec command
-	}
-	else
-	{
-		close(fd[1]);
-		dup2(fd[0],STDIN_FILENO);
-		waitpid(pid, NULL, 0);
+		char **args = get_args(av);
+		execve(pathfinder(args[0],environ),args,environ);
 	}
 }
 
@@ -60,25 +55,28 @@ char **get_args(char *av)
 	return args;
 }
 
-void middle_childs()
+int *middle_childs(int *fd, char *av,char **cmd)
 {
+	//Leggo dalla fd[0] della pipe precedente.
+	//Scrivo nella fd[1] della pipe corrente.
+	//Repeat
+	int fd2[2];
 	pid_t pid;
-	int fd[2];
+	extern char **environ;
 
-	pipe(fd);
+	pipe(fd2);
 
 	pid = fork();
 	if (pid == 0)
 	{
 		close(fd[0]);
-		dup2(fd[1],STDOUT_FILENO);
-		//exec
+		dup2(fd[0],STDIN_FILENO);
+		dup2(fd2[1],STDOUT_FILENO);
+		char **args = get_args(av);
+		execve(pathfinder(*cmd,environ),args,environ);
 	}
 	else
-	{
-		close(fd[1]);
-		dup2(fd[0],STDIN_FILENO);
-	}
+		return fd2;
 }
 
 void last_child(int outfile)

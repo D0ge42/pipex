@@ -59,8 +59,7 @@ int	main(int ac, char **av,char **env)
 	int infile = open(av[1],O_RDONLY);
 	int outfile = open(av[ac - 1],O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	int result = check_file_existence(av[1], av[ac - 1]);
-	
-	//int command_count = ac - 2;
+	int i = 0;
 	if(result == 1)
 	{
 
@@ -69,21 +68,25 @@ int	main(int ac, char **av,char **env)
 
 		if (pid == 0)
 		{
-			// grep hello
-			close(fd[0]);
-			dup2(infile,STDIN_FILENO);
-			dup2(fd[1],STDOUT_FILENO);
-			char **args_0 = get_args(av[2]);
-			execve(pathfinder(args_0[0],env),args_0,env);
-			close(fd[1]);
+			if(i == 0)
+			{
+				first_child(infile,av[2],fd);
+				i++;
+			}
+			while (i < ac - 3)
+			{
+				//Handle middle child
+				middle_child(fd,);
+				i++;
+			}
 		}
-		else 
+		else // Parent call that should print to the output file 
 		{
 			// wc -w
 			close(fd[1]);
 			dup2(fd[0],STDIN_FILENO);
 			dup2(outfile,STDOUT_FILENO);
-			char **args_1 = get_args(av[3]);
+			char **args_1 = get_args(av[ac - 2]);
 			execve(pathfinder(args_1[0],env), args_1,env);
 			close(fd[0]);
 		}
