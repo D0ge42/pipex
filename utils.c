@@ -9,26 +9,13 @@ and they're accessible in read/write mode */
 
 int	check_file_existence(char *infile, char *outfile)
 {
-	int	fd;
 
-	fd = 0;
 	if (access(infile, F_OK) == -1)
 		perror("Input file does not exists");
 	if (access(infile, R_OK) == -1)
 	{
 		perror("Can't read from input file");
-		if (access(outfile, F_OK) == -1)
-		{
-			fd = open(outfile, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
-			close(fd);
-		}
 		return (0);
-	}
-	if (access(outfile, F_OK) == -1)
-	{
-		fd = open(outfile, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
-		close(fd);
-        return 0;
 	}
 	if (access(outfile, W_OK) == -1)
 	{

@@ -56,9 +56,10 @@ int	main(int ac, char **av,char **env)
 {
 	(void)ac;
 	int fd[2];
-	int result = check_file_existence(av[1], av[ac - 1]);
 	int infile = open(av[1],O_RDONLY);
-	int outfile = open(av[ac - 1],O_WRONLY);
+	int outfile = open(av[ac - 1],O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	int result = check_file_existence(av[1], av[ac - 1]);
+	
 	//int command_count = ac - 2;
 	if(result == 1)
 	{
