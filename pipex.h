@@ -12,8 +12,10 @@
 
 int check_file_existence(char *infile, char *outfile);
 char	*pathfinder(const char *cmd, char **env);
-int first_child(int infile, char *av);
-int middle_childs(int fd, char *av);
 char **get_args(char *av);
+void first_child(int infile, char *av);
+void middle_childs(char *av);
+void parent(int outfile, char *av);
+void heredoc(char *limiter, int ac);
 
 #endif

@@ -52,43 +52,41 @@ char	*pathfinder(const char *cmd, char **env)
 	return (return_path);
 }
 
-int	main(int ac, char **av, char **env)
+int	main(int ac, char **av)
 {
 	int		infile;
 	int		outfile;
-	int		result;
 	int		i;
-	int		current_fd;
-	char	**args_1;
 
+
+	infile = 0;
+	outfile = 0;
 	(void)ac;
-	infile = open(av[1], O_RDONLY);
+	if ((av[1] && av[ac - 1]) && ft_strncmp(av[1], "here_doc", ft_strlen("here_doc")))
+		infile = open(av[1], O_RDONLY);
 	outfile = open(av[ac - 1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	result = check_file_existence(av[1], av[ac - 1]);
 	i = 0;
-	current_fd = infile;
-	if (result == 1)
+	if (i == 0)
 	{
-		if (i == 0)
+		// file1.txt cmd
+		// here_doc lim
+		if (!ft_strncmp(av[1], "here_doc", ft_strlen("here_doc")))
 		{
-			current_fd = first_child(infile, av[2]);
-			i++;
+			heredoc(av[2], ac);
+			i+=3;
 		}
-		while (i < ac - 3)
+		else
 		{
-			current_fd = middle_childs(current_fd, av[2 + i]);
-			i++;
-		}
-		pid_t pid = fork();
-		if(pid == 0)
-		{
-			dup2(current_fd, STDIN_FILENO);
-			dup2(outfile, STDOUT_FILENO);
-			args_1 = get_args(av[ac - 2]);
-			execve(pathfinder(args_1[0], env), args_1, env);
-			close(current_fd);
+			first_child(infile, av[2]);
+			i+=2;
 		}
 	}
+	while (i < ac - 3)
+	{
+		middle_childs(av[i]);
+		i++;
+	}
+	parent(outfile,av[ac - 2]);
 }
 
 // Creo pipe per poter scrivere alla read e write end of the pipe.
