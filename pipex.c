@@ -28,6 +28,7 @@ char	*pathfinder(const char *cmd, char **env)
 	char	**path;
 	int		i;
 	char	*return_path;
+	extern char **environ;
 	size_t	len;
 
 	i = 0;
@@ -54,39 +55,34 @@ char	*pathfinder(const char *cmd, char **env)
 
 int	main(int ac, char **av)
 {
-	int		infile;
-	int		outfile;
-	int		i;
-
+	int	infile;
+	int	outfile;
+	int	i;
+	int	result;
 
 	infile = 0;
 	outfile = 0;
+	result = ft_strcmp(av[1], "here_doc");
 	(void)ac;
-	if ((av[1] && av[ac - 1]) && ft_strncmp(av[1], "here_doc", ft_strlen("here_doc")))
-		infile = open(av[1], O_RDONLY);
-	outfile = open(av[ac - 1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	i = 0;
-	if (i == 0)
+	if ((av[1] && av[ac - 1]))
 	{
-		// file1.txt cmd
-		// here_doc lim
-		if (!ft_strncmp(av[1], "here_doc", ft_strlen("here_doc")))
-		{
-			heredoc(av[2], ac);
-			i+=3;
-		}
+		infile = open(av[1], O_RDONLY);
+		if (result)
+			outfile = open(av[ac - 1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
 		else
-		{
-			first_child(infile, av[2]);
-			i+=2;
-		}
+			outfile = open(av[ac - 1], O_WRONLY | O_CREAT | O_APPEND, 0644);
 	}
-	while (i < ac - 3)
+	i = 0;
+	if (!ft_strcmp(av[1], "here_doc"))
+		heredoc(av[2], ac, &i);
+	else
+		first_child(infile, av[2], &i);
+	while (i < ac - 2)
 	{
 		middle_childs(av[i]);
 		i++;
 	}
-	parent(outfile,av[ac - 2]);
+	parent(outfile, av[i]);
 }
 
 // Creo pipe per poter scrivere alla read e write end of the pipe.

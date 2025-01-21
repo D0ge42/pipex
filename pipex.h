@@ -13,9 +13,10 @@
 int check_file_existence(char *infile, char *outfile);
 char	*pathfinder(const char *cmd, char **env);
 char **get_args(char *av);
-void first_child(int infile, char *av);
+void first_child(int infile, char *av, int *i);
 void middle_childs(char *av);
 void parent(int outfile, char *av);
-void heredoc(char *limiter, int ac);
+void heredoc(char *limiter, int ac, int *i);
+int ft_strcmp(char *s1, char *s2);
 
 #endif

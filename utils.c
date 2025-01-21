@@ -34,7 +34,14 @@ int	check_file_existence(char *infile, char *outfile)
 	}
 	return (1);
 }
-void	first_child(int infile, char *av)
+
+/*Function that will execute the first command.
+It will get data from infile rather than from STDIN thanks to dup2
+After that it will set fd[1] to be the new stdout.
+This way whatever will be written in the write end of the pipe
+can be read from the write end of the pipe by middle childs*/
+
+void	first_child(int infile, char *av, int *i)
 {
 	pid_t		pid;
 	extern char	**environ;
@@ -53,8 +60,12 @@ void	first_child(int infile, char *av)
 		execve(pathfinder(args[0], environ), args, environ);
 	}
 	close(fd[1]);
-	dup2(infile,STDIN_FILENO);
+	dup2(fd[0], STDIN_FILENO);
+	*i += 3;
 }
+/*Function used to get command and relative flags.
+Space will be the separator. This way we'll be able to separate
+every command by the flags and use them.*/
 
 char	**get_args(char *av)
 {
@@ -67,6 +78,11 @@ char	**get_args(char *av)
 		return (NULL);
 	return (args);
 }
+
+/*Middle childs are handled in a different way. They read from the
+previous read end of the pipe and write on the current write end of the pipe.
+We'll set fd[0] to be the new stdin.
+We'll also set fd[1] to be the new stdout, to make it so data can be read after.*/
 
 void	middle_childs(char *av)
 {
@@ -90,9 +106,13 @@ void	middle_childs(char *av)
 		}
 		execve(pathfinder(args[0], environ), args, environ);
 	}
-	dup2(fds[0],STDIN_FILENO);
+	dup2(fds[0], STDIN_FILENO);
 	close(fds[1]);
 }
+
+/*Parent will execute the last command and set output file descriptor
+to be the new stdout. This way the data will be stored inside outfile rather
+than going on STDOUT.*/
 
 void	parent(int outfile, char *av)
 {
@@ -105,12 +125,11 @@ void	parent(int outfile, char *av)
 	i = 0;
 	pipe(fds);
 	pid = fork();
-
 	args = get_args(av);
 	if (pid == 0)
 	{
 		dup2(outfile, STDOUT_FILENO);
-		execve(pathfinder(args[0],environ), args, environ);
+		execve(pathfinder(args[0], environ), args, environ);
 	}
 	while (args[i])
 		free(args[i++]);
@@ -118,57 +137,45 @@ void	parent(int outfile, char *av)
 	close(fds[0]);
 	close(fds[1]);
 }
+int	ft_strcmp(char *s1, char *s2)
+{
+	while (*s1 && (*s1 == *s2))
+	{
+		s1++;
+		s2++;
+	}
+	return (*s1 - *s2);
+}
 
-void	heredoc(char *limiter, int ac)
+void	heredoc(char *limiter, int ac, int *i)
 {
 	char	*line;
 	int		tmp_file;
-	size_t	line_len;
 
 	tmp_file = 0;
 	line = NULL;
 	if (ac < 6)
 		return ;
 	tmp_file = open("tmp_file.txt", O_WRONLY | O_CREAT | O_APPEND, 0644);
-	dup2(tmp_file, STDOUT_FILENO);
+	limiter = ft_strjoin(limiter, "\n");
 	while (1)
 	{
+		write(1, "here_doc >", 10);
 		line = get_next_line(0);
-		line_len = ft_strlen(line);
-		if (line_len > 0 && line[line_len - 1] == '\n')
-			line[line_len - 1] = '\0';
-		if (!ft_strncmp(line, limiter, ft_strlen(limiter)))
+		if (!line)
+			return ;
+		if (!ft_strcmp(line, limiter))
 		{
 			free(line);
 			break ;
 		}
-		if (line == NULL)
-			break;
-		write(tmp_file, line, ft_strlen(line));
+		ft_putstr_fd(line, tmp_file);
+		free(line);
 	}
-	tmp_file = open("tmp_file.txt", O_WRONLY);
-	dup2(tmp_file,STDIN_FILENO);
+	tmp_file = open("tmp_file.txt", O_RDONLY | O_APPEND);
+	free(limiter);
+	dup2(tmp_file, STDIN_FILENO);
 	close(tmp_file);
 	unlink("tmp_file.txt");
+	*i += 3;
 }
-
-// void pipe_creator(int pipefd[2])
-// {
-//     pid_t pid;
-//     pid = fork();
-//     char write_msg[] = "Hello from writer";
-//     char read_msg[50];
-//     if (pid == 0) //Processo figlio
-//     {
-//         close(pipefd[1]);
-//         read(pipefd[0],read_msg,sizeof(read_msg));
-//         ft_printf("Child read: %s\n", read_msg);
-//     }
-//     else
-//     {
-//         close(pipefd[0]);
-//         write(pipefd[1],write_msg,ft_strlen(write_msg)+ 1);
-//         close(pipefd[1]);
-//     }
-//     return (0);
-// }
