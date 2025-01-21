@@ -1,7 +1,7 @@
 NAME = pipex
 LIBFT = libft/libft.a
 
-SRC = pipex.c utils.c
+SRC = pipex.c commands_handler.c error_handler.c error_handler2.c utils.c
 
 OBJS = $(SRC:.c=.o) # Esclude i file oggetto di libft
 
@@ -12,7 +12,7 @@ AR = ar crs
 
 # Regola per creare l'eseguibile
 $(NAME): $(OBJS) $(LIBFT)
-	@$(CC) $(CFLAGS) $(OBJS) -Llibft -lft
+	@$(CC) -o pipex $(CFLAGS) $(OBJS) -Llibft -lft
 	@echo "\033[32m$(NAME) compiled :D\033[0m"
 
 # Regola per creare i file .o
