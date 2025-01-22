@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   error_handler2.c                                   :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: lonulli <marvin@42.fr>                     +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/22 16:35:44 by lonulli           #+#    #+#             */
+/*   Updated: 2025/01/22 16:35:45 by lonulli          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "pipex.h"
 
 /*Function to checks wheter selected files exists
@@ -29,4 +41,21 @@ int	check_file_existence(char *infile, char *outfile)
 		}
 	}
 	return (1);
+}
+
+void	close_remaining_fds(int outfile, int infile)
+{
+	close(outfile);
+	close(infile);
+	close(STDIN_FILENO);
+	close(STDERR_FILENO);
+	close(STDOUT_FILENO);
+}
+
+void	check_ac(int ac, int *infile, int *outfile)
+{
+	if (ac == 1)
+		exit(1);
+	*infile = 0;
+	*outfile = 0;
 }

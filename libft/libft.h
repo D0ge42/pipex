@@ -17,7 +17,7 @@
 # include <stdlib.h>
 # include <unistd.h>
 # ifndef BUFFER_SIZE
-#  define BUFFER_SIZE 10
+#  define BUFFER_SIZE 1
 # endif
 # include <limits.h>
 # include <stdarg.h>
@@ -130,7 +130,7 @@ char				*get_next_line(int fd);
 char				*safe_malloc(void);
 char				*ft_strdup_gnl(const char *str);
 char				*ft_strjoin_gnl(char const *s1, char const *s2);
-
+char				*extract_line(char *stash, char *old_line);
 /*-------------------------------------------------------/
 /                      LIBFT                             /
 /-------------------------------------------------------*/

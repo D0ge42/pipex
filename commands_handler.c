@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   commands_handler.c                                 :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: lonulli <marvin@42.fr>                     +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/22 16:35:37 by lonulli           #+#    #+#             */
+/*   Updated: 2025/01/22 16:35:38 by lonulli          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "libft/libft.h"
 #include "pipex.h"
 #include <fcntl.h>
@@ -10,38 +22,33 @@ After that it will set fd[1] to be the new stdout.
 This way whatever will be written in the write end of the pipe
 can be read from the write end of the pipe by middle childs*/
 
-void	first_child(int infile, char *av, int *i)
+void	first_child(int infile, char *av, int *i, char **environ)
 {
 	pid_t		pid;
-	extern char	**environ;
-	int			fd[2];
+	int			fds[2];
 	char		**args;
+	char		*cmd_path;
 
+	cmd_path = NULL;
 	pid = 0;
 	args = NULL;
-	custom_pipe(fd);
+	custom_pipe(fds);
 	pid = fork();
-	check_fork(pid, fd[1], fd[0]);
+	check_fork(pid, fds[1], fds[0]);
+	args = get_args(av);
 	if (pid == 0)
 	{
-		args = get_args(av);
 		custom_dup2(infile, "STDIN");
-		custom_dup2(fd[1], "STDOUT");
-		if (access(pathfinder(args[0], environ), F_OK) == -1)
-		{
-			perror("Command not found");
-			close_fds(fd[1], fd[0]);
-			exit(1);
-		}
-		if (execve(pathfinder(args[0], environ), args, environ) == -1)
-		{
-			close_fds(fd[1], fd[0]);
-			ft_putstr_fd(strerror(errno), 2);
-		}
+		custom_dup2(fds[1], "STDOUT");
+		cmd_path = pathfinder(args[0], environ);
+		if (access(cmd_path, F_OK) == -1)
+			free_and_close(args, cmd_path, fds, 'Y');
+		if (execve(cmd_path, args, environ) == -1)
+			free_and_close(args, cmd_path, fds, 'Y');
 	}
-	custom_dup2(fd[0], "STDIN");
-	close_fds(fd[1], fd[0]);
+	custom_dup2(fds[0], "STDIN");
 	*i += 3;
+	free_and_close(args, cmd_path, fds, 'N');
 }
 
 /*Middle childs are handled in a different way. They read from the
@@ -56,32 +63,27 @@ void	middle_childs(char *av)
 	pid_t		pid;
 	extern char	**environ;
 	char		**args;
+	char		*cmd_path;
 
-	pid = 0;
+	cmd_path = NULL;
 	args = NULL;
 	custom_pipe(fds);
 	pid = fork();
 	check_fork(pid, fds[1], fds[0]);
+	args = get_args(av);
 	if (pid == 0)
 	{
-		args = get_args(av);
 		if (!args)
 			return ;
 		custom_dup2(fds[1], "STDOUT");
-		if (access(pathfinder(args[0], environ), F_OK) == -1)
-		{
-			perror("Command not found");
-			close_fds(fds[1], fds[0]);
-			exit(1);
-		}
-		if (execve(pathfinder(args[0], environ), args, environ) == -1)
-		{
-			close_fds(fds[1], fds[0]);
-			ft_putstr_fd(strerror(errno), 2);
-		}
+		cmd_path = pathfinder(args[0], environ);
+		if (access(cmd_path, F_OK) == -1)
+			free_and_close(args, cmd_path, fds, 'Y');
+		if (execve(cmd_path, args, environ) == -1)
+			free_and_close(args, cmd_path, fds, 'Y');
 	}
-	custom_dup2(fds[0], STDIN_FILENO);
-	close_fds(fds[1], fds[0]);
+	custom_dup2(fds[0], "STDIN");
+	free_and_close(args, cmd_path, fds, 'N');
 }
 
 /*Parent will execute the last command and set output file descriptor
@@ -94,9 +96,9 @@ void	parent(int outfile, char *av)
 	int			fds[2];
 	extern char	**environ;
 	char		**args;
-	int			i;
+	char		*cmd_path;
 
-	i = 0;
+	cmd_path = NULL;
 	custom_pipe(fds);
 	pid = fork();
 	check_fork(pid, fds[1], fds[0]);
@@ -104,22 +106,13 @@ void	parent(int outfile, char *av)
 	if (pid == 0)
 	{
 		custom_dup2(outfile, "STDOUT");
-		if (access(pathfinder(args[0], environ), F_OK) == -1)
-		{
-			perror("Command not found");
-			close_fds(fds[1], fds[0]);
-			exit(1);
-		}
-		if (execve(pathfinder(args[0], environ), args, environ) == -1)
-		{
-			close_fds(fds[1], fds[0]);
-			ft_putstr_fd(strerror(errno), 2);
-		}
+		cmd_path = pathfinder(args[0], environ);
+		if (access(cmd_path, F_OK) == -1)
+			free_and_close(args, cmd_path, fds, 'Y');
+		if (execve(cmd_path, args, environ) == -1)
+			free_and_close(args, cmd_path, fds, 'Y');
 	}
-	while (args[i])
-		free(args[i++]);
-	free(args);
-	close_fds(fds[1], fds[0]);
+	free_and_close(args, cmd_path, fds, 'N');
 }
 
 /*Heredoc is short for "heredocument".
@@ -134,31 +127,22 @@ void	heredoc(char *limiter, int ac, int *i)
 	char	*line;
 	int		tmp_file;
 
-	line = NULL;
-	tmp_file = open("tmp_file.txt", O_WRONLY | O_CREAT | O_APPEND, 0644);
 	if (ac < 6)
 		exit(EXIT_FAILURE);
+	tmp_file = open("tmp_file.txt", O_WRONLY | O_CREAT | O_APPEND, 0644);
 	limiter = ft_strjoin(limiter, "\n");
-	if (!limiter)
-		exit(EXIT_FAILURE);
 	while (1)
 	{
-		ft_putstr_fd("here_doc >", 1);
-		line = get_next_line(0);
-		if (!line)
-		{
-			free(limiter);
-			exit(EXIT_FAILURE);
-		}
+		line = gnl_pipex(&line);
 		if (!ft_strcmp(line, limiter))
-		{
-			free(limiter);
-			free(line);
 			break ;
-		}
+		if (!line)
+			continue ;
 		ft_putstr_fd(line, tmp_file);
 		free(line);
 	}
+	free(line);
+	free(limiter);
 	tmp_file = open("tmp_file.txt", O_RDONLY);
 	custom_dup2(tmp_file, "STDIN");
 	close(tmp_file);

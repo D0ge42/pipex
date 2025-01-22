@@ -66,7 +66,7 @@ Parameters: String stash, from where we'll extract the line to print.
 Old line, which is the old line we've to free.(The buffer where we've used read.
 Return values: Line we've to print.*/
 
-static char	*extract_line(char *stash, char *old_line)
+char	*extract_line(char *stash, char *old_line)
 {
 	int		i;
 	int		linelenght;
