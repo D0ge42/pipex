@@ -22,12 +22,7 @@ int	check_file_existence(char *infile, char *outfile)
 		perror("Input file does not exists");
 		exit(EXIT_FAILURE);
 	}
-	if (access(outfile, F_OK) != 0)
-	{
-		perror("Output file does not exists");
-		exit(EXIT_FAILURE);
-	}
-	if (!access(infile, F_OK) && !access(infile, F_OK))
+	if (!access(infile, F_OK) && !access(outfile, F_OK))
 	{
 		if (access(infile, R_OK) != 0)
 		{
