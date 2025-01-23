@@ -97,4 +97,4 @@ Test your program with different commands, files, and edge cases to ensure all t
 
 ## Contributors
 
-- [Your Name](https://github.com/D0ge42)
+- [D0ge42](https://github.com/D0ge42)
